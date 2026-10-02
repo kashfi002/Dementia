@@ -17,7 +17,7 @@ export default function Index() {
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.roleButton, { backgroundColor: "#A4B9CE" }]}
+        style={[styles.roleButton, { backgroundColor: "#583722" }]}
         onPress={() => router.push("/patient/login")}
       >
         <Text style={styles.roleButtonText}>I'm the Patient</Text>
@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FAF7F2",
+    backgroundColor: "#BDD7DE",
     padding: 24,
   },
   title: {

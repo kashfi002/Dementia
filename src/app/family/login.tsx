@@ -1,6 +1,8 @@
+import { authClient } from "@/lib/auth-client";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  Alert,
   StyleSheet,
   Text,
   TextInput,
@@ -12,9 +14,17 @@ export default function FamilyLogin() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    // dummy login — no backend yet
+  const handleLogin = async () => {
+    setLoading(true);
+    const { error } = await authClient.signIn.email({ email, password });
+    setLoading(false);
+
+    if (error) {
+      Alert.alert("Login failed", error.message || "Please check your details");
+      return;
+    }
     router.push("/family/home");
   };
 
@@ -37,8 +47,14 @@ export default function FamilyLogin() {
         onChangeText={setPassword}
       />
 
-      <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
-        <Text style={styles.primaryButtonText}>Log In</Text>
+      <TouchableOpacity
+        style={styles.primaryButton}
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        <Text style={styles.primaryButtonText}>
+          {loading ? "Logging in..." : "Log In"}
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => router.push("/family/signup")}>
@@ -90,10 +106,5 @@ const styles = StyleSheet.create({
     marginTop: 18,
     fontSize: 14,
   },
-  backText: {
-    color: "#999",
-    textAlign: "center",
-    marginTop: 20,
-    fontSize: 14,
-  },
+  backText: { color: "#999", textAlign: "center", marginTop: 20, fontSize: 14 },
 });

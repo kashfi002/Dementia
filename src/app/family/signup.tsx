@@ -1,6 +1,8 @@
+import { authClient } from "@/lib/auth-client";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  Alert,
   StyleSheet,
   Text,
   TextInput,
@@ -8,19 +10,53 @@ import {
   View,
 } from "react-native";
 
+const API_BASE = "http://localhost:5000"; // same baseURL as auth-client
+
 export default function FamilySignup() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [inviteCode, setInviteCode] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSignup = () => {
-    if (inviteCode.trim() === "") {
-      router.push("/family/create-patient"); // creating a new patient
-    } else {
-      router.push("/family/home"); // joining an existing patient
+  const handleSignup = async () => {
+    setLoading(true);
+    const { error } = await authClient.signUp.email({ email, password, name });
+
+    if (error) {
+      setLoading(false);
+      Alert.alert(
+        "Sign up failed",
+        error.message || "Please check your details",
+      );
+      return;
     }
+
+    if (inviteCode.trim() === "") {
+      setLoading(false);
+      router.push("/family/create-patient"); // creating a new patient
+      return;
+    }
+
+    // joining an existing patient
+    const res = await fetch(`${API_BASE}/api/patients/join`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ inviteCode }),
+    });
+    const data = await res.json();
+    setLoading(false);
+
+    if (!res.ok) {
+      Alert.alert(
+        "Couldn't join patient",
+        data.error || "Check the invite code",
+      );
+      return;
+    }
+    router.push("/family/home");
   };
 
   return (
@@ -58,8 +94,14 @@ export default function FamilySignup() {
         Leave the invite code blank to create a new patient profile instead.
       </Text>
 
-      <TouchableOpacity style={styles.primaryButton} onPress={handleSignup}>
-        <Text style={styles.primaryButtonText}>Create Account</Text>
+      <TouchableOpacity
+        style={styles.primaryButton}
+        onPress={handleSignup}
+        disabled={loading}
+      >
+        <Text style={styles.primaryButtonText}>
+          {loading ? "Creating..." : "Create Account"}
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => router.push("/family/login")}>
@@ -93,12 +135,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E0DCD5",
   },
-  hint: {
-    fontSize: 12,
-    color: "#999",
-    marginBottom: 16,
-    marginTop: -6,
-  },
+  hint: { fontSize: 12, color: "#999", marginBottom: 16, marginTop: -6 },
   primaryButton: {
     backgroundColor: "#51121A",
     borderRadius: 12,

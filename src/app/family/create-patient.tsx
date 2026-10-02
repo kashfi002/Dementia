@@ -2,18 +2,16 @@ import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-// dummy code generator — no backend yet
-function generateInviteCode() {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
-}
+const API_BASE = "http://localhost:5000";
 
 export default function CreatePatient() {
   const router = useRouter();
@@ -22,6 +20,7 @@ export default function CreatePatient() {
   const [dob, setDob] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -34,13 +33,30 @@ export default function CreatePatient() {
       quality: 0.7,
     });
 
-    if (!result.canceled) {
-      setPhoto(result.assets[0].uri);
-    }
+    if (!result.canceled) setPhoto(result.assets[0].uri);
   };
 
-  const handleCreate = () => {
-    setInviteCode(generateInviteCode());
+  const handleCreate = async () => {
+    setLoading(true);
+    const res = await fetch(`${API_BASE}/api/patients`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        name: patientName,
+        age: age ? Number(age) : undefined,
+        dob,
+        photoUrl: photo, // local URI for now — see note below
+      }),
+    });
+    const data = await res.json();
+    setLoading(false);
+
+    if (!res.ok) {
+      Alert.alert("Couldn't create profile", data.error || "Try again");
+      return;
+    }
+    setInviteCode(data.patient.inviteCode);
   };
 
   return (
@@ -77,8 +93,14 @@ export default function CreatePatient() {
             onChangeText={setDob}
           />
 
-          <TouchableOpacity style={styles.primaryButton} onPress={handleCreate}>
-            <Text style={styles.primaryButtonText}>Create Profile</Text>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={handleCreate}
+            disabled={loading}
+          >
+            <Text style={styles.primaryButtonText}>
+              {loading ? "Creating..." : "Create Profile"}
+            </Text>
           </TouchableOpacity>
         </>
       ) : (
@@ -128,15 +150,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     overflow: "hidden",
   },
-  photoPreview: {
-    width: "100%",
-    height: "100%",
-  },
-  photoPickerText: {
-    color: "#999",
-    fontSize: 13,
-    textAlign: "center",
-  },
+  photoPreview: { width: "100%", height: "100%" },
+  photoPickerText: { color: "#999", fontSize: 13, textAlign: "center" },
   input: {
     backgroundColor: "#fff",
     borderRadius: 12,
