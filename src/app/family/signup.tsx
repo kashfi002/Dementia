@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 
-const API_BASE = "http://localhost:5000"; // same baseURL as auth-client
+const API_BASE = "http://192.168.1.6:5000"; // same baseURL as auth-client
 
 export default function FamilySignup() {
   const router = useRouter();
